@@ -1,0 +1,4 @@
+    name        email       phone       password
+  ----------    ---------   ---------   ---------
+
+amirul islam amirul@gmail.com 01648089701 12345
