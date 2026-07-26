@@ -16,6 +16,17 @@ struct Room
     float price;
     char status[20];
 };
+struct Booking
+{
+    int bookingID;
+    char guestName[50];
+    int roomNumber;
+    char checkIn[20];
+    char checkOut[20];
+    char status[20];
+};
+int bookingCounter = 1001;
+
 void registerUser()
 {
     struct User user;
@@ -78,7 +89,7 @@ void loginUser()
         printf(" Login Successful!\n");
         printf(" Welcome %s\n", user.name);
         printf("==================================\n");
-        if (strcmp(user.email, "admin@gmail.com")  == 0)
+        if (strcmp(user.email, "admin@gmail.com") == 0)
         {
             adminMenu();
         }
@@ -102,7 +113,7 @@ void guestMenu()
         printf("=====================================\n");
         printf("1. Search Available Rooms\n");
         printf("2. Book Room\n");
-        printf("3. Cancel Reservation\n");
+        printf("3. Cancel Booking\n");
         printf("4. View My Bookings\n");
         printf("5. Logout\n");
 
@@ -115,13 +126,13 @@ void guestMenu()
             searchAvailableRooms();
             break;
         case 2:
-            printf("\nRoom Booking Module Under Development...\n");
+            bookRoom();
             break;
         case 3:
-            printf("\nModify/Cancel Reservation Module Under Development...\n");
+            cancelBooking();
             break;
         case 4:
-            printf("\nBooking History Module Under Development...\n");
+            viewBookings();
             break;
         case 5:
             printf("\nLogging Out...\n");
@@ -167,7 +178,7 @@ void adminMenu()
             printf("\nLogging Out...\n");
             return;
         default:
-            printf("\nInvalid Choice...Please try again\n");
+            printf("\nInvalid Choice...Please try again....\n");
         }
     }
 }
@@ -334,6 +345,147 @@ void searchAvailableRooms()
         }
     }
     fclose(userFile);
+}
+void bookRoom()
+{
+    FILE *roomFile, *bookingFile;
+    struct Room room;
+    struct Booking booking;
+    int roomNo;
+    int found = 0;
+    roomFile = fopen("rooms.dat", "rb+");
+    bookingFile = fopen("booking.dat", "ab");
+
+    if (roomFile == NULL || bookingFile == NULL)
+    {
+        printf("File Error!\n");
+        return;
+    }
+    printf("\n===== ROOM BOOKING =====\n");
+
+    printf("Enter Room Number: ");
+    scanf("%d", &roomNo);
+    while (fread(&room, sizeof(struct Room), 1, roomFile) == 1)
+    {
+        if (room.roomNumber == roomNo &&
+            strcmp(room.status, "Available") == 0)
+        {
+            found = 1;
+
+            booking.bookingID = bookingCounter++;
+
+            getchar();
+            printf("Enter Guest Name: ");
+            gets(booking.guestName);
+            booking.roomNumber = roomNo;
+
+            printf("Check-In Date: ");
+            scanf("%s", booking.checkIn);
+            printf("Check-Out Date: ");
+            scanf("%s", booking.checkOut);
+
+            strcpy(booking.status, "Booked");
+
+            fwrite(&booking, sizeof(struct Booking), 1, bookingFile);
+
+            strcpy(room.status, "Occupied");
+
+            fseek(roomFile, -sizeof(struct Room), SEEK_CUR);
+
+            fwrite(&room, sizeof(struct Room), 1, roomFile);
+
+            printf("\nBooking Successful!\n");
+            printf("Booking ID : %d\n", booking.bookingID);
+
+            break;
+        }
+    }
+
+    if (!found)
+    {
+        printf("Room is not available!\n");
+    }
+
+    fclose(roomFile);
+    fclose(bookingFile);
+}
+void viewBookings()
+{
+    FILE *fp;
+    struct Booking booking;
+    fp = fopen("booking.dat", "rb");
+    if (fp == NULL)
+    {
+        printf("No Booking Found!\n");
+        return;
+    }
+    printf("\n========== BOOKINGS ==========\n");
+    while (fread(&booking, sizeof(struct Booking), 1, fp) == 1)
+    {
+        printf("\nBooking ID : %d", booking.bookingID);
+        printf("\nGuest Name : %s", booking.guestName);
+        printf("\nRoom No    : %d", booking.roomNumber);
+        printf("\nCheck-In   : %s", booking.checkIn);
+        printf("\nCheck-Out  : %s", booking.checkOut);
+        printf("\nStatus     : %s", booking.status);
+        printf("\n----------------------------");
+    }
+    fclose(fp);
+}
+void cancelBooking()
+{
+    FILE *bookingFile, *temp, *roomFile;
+    struct Booking booking;
+    struct Room room;
+    int bookingID;
+    int found = 0;
+    bookingFile = fopen("booking.dat", "rb");
+    temp = fopen("temp.dat", "wb");
+    roomFile = fopen("rooms.dat", "rb+");
+    if (bookingFile == NULL)
+    {
+        printf("No Booking Found!\n");
+        return;
+    }
+    printf("\n===== CANCEL BOOKING =====\n");
+    printf("Enter Booking ID: ");
+    scanf("%d", &bookingID);
+
+    while (fread(&booking, sizeof(struct Booking), 1, bookingFile) == 1)
+    {
+        if (booking.bookingID == bookingID)
+        {
+            found = 1;
+
+            rewind(roomFile);
+
+            while (fread(&room, sizeof(struct Room), 1, roomFile) == 1)
+            {
+                if (room.roomNumber == booking.roomNumber)
+                {
+                    strcpy(room.status, "Available");
+                    fseek(roomFile, -sizeof(struct Room), SEEK_CUR);
+                    fwrite(&room, sizeof(struct Room), 1, roomFile);
+                    break;
+                }
+            }
+            printf("Booking Cancelled Successfully!\n");
+        }
+        else
+        {
+            fwrite(&booking, sizeof(struct Booking), 1, temp);
+        }
+    }
+    fclose(bookingFile);
+    fclose(roomFile);
+    fclose(temp);
+
+    remove("booking.dat");
+    rename("temp.dat", "booking.dat");
+    if (!found)
+    {
+        printf("Booking ID Not Found!\n");
+    }
 }
 int main()
 {
