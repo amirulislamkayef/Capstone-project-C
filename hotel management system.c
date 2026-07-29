@@ -160,7 +160,8 @@ void adminMenu()
         printf("2. View Rooms\n");
         printf("3. Update Room\n");
         printf("4. Delete Room\n");
-        printf("5. Logout\n");
+        printf("5. Guest Records\n");
+        printf("6. Logout\n");
 
         printf("\nEnter Choice: ");
         scanf("%d", &choice);
@@ -180,6 +181,9 @@ void adminMenu()
             deleteRoom();
             break;
         case 5:
+            viewGuestRecords();
+            break;
+        case 6:
             printf("\nLogging Out...\n");
             return;
         default:
@@ -195,7 +199,8 @@ void receptionistMenu()
         printf("\n========== RECEPTIONIST ==========\n");
         printf("1. Guest Check-In\n");
         printf("2. Guest Check-Out\n");
-        printf("3. Logout\n");
+        printf("3. Generate Invoice\n");
+        printf("4. Logout\n");
         printf("Enter Choice: ");
         scanf("%d", &choice);
         switch (choice)
@@ -207,6 +212,9 @@ void receptionistMenu()
             checkOutGuest();
             break;
         case 3:
+            generateInvoice();
+            break;
+        case 4:
             printf("\nLogging Out...\n");
             return;
         default:
@@ -594,7 +602,6 @@ void checkOutGuest()
         if (booking.bookingID == bookingID)
         {
             found = 1;
-
             printf("Enter Total Stay (Days): ");
             scanf("%d", &booking.totalDays);
 
@@ -605,12 +612,10 @@ void checkOutGuest()
                 if (room.roomNumber == booking.roomNumber)
                 {
                     totalBill = room.price * booking.totalDays;
-
                     strcpy(room.status, "Available");
 
                     fseek(roomFile, -sizeof(struct Room), SEEK_CUR);
                     fwrite(&room, sizeof(struct Room), 1, roomFile);
-
                     break;
                 }
             }
@@ -628,13 +633,10 @@ void checkOutGuest()
             printf("-----------------------------\n");
             printf("Total Bill : %.2f\n", totalBill);
             printf("=============================\n");
-
             printf("\nGuest Checked-Out Successfully!\n");
-
             break;
         }
     }
-
     if (!found)
     {
         printf("Booking Not Found!\n");
@@ -642,6 +644,100 @@ void checkOutGuest()
 
     fclose(bookingFile);
     fclose(roomFile);
+}
+void generateInvoice()
+{
+    FILE *bookingFile;
+    FILE *roomFile;
+    struct Booking booking;
+    struct Room room;
+    int bookingID;
+    int found = 0;
+    float roomCost;
+    float tax;
+    float discount;
+    float totalBill;
+    bookingFile = fopen("booking.dat", "rb");
+    roomFile = fopen("rooms.dat", "rb");
+    if (bookingFile == NULL || roomFile == NULL)
+    {
+        printf("File Error!\n");
+        return;
+    }
+    printf("\n========== PAYMENT ==========\n");
+    printf("Enter Booking ID : ");
+    scanf("%d", &bookingID);
+
+    while (fread(&booking, sizeof(struct Booking), 1, bookingFile) == 1)
+    {
+        if (booking.bookingID == bookingID)
+        {
+            found = 1;
+            rewind(roomFile);
+            while (fread(&room, sizeof(struct Room), 1, roomFile) == 1)
+            {
+                if (room.roomNumber == booking.roomNumber)
+                {
+                    roomCost = room.price * booking.totalDays;
+
+                    tax = roomCost * 0.10;
+                    discount = roomCost * 0.05;
+
+                    totalBill = roomCost + tax - discount;
+
+                    printf("\n==============================\n");
+                    printf("         HOTEL INVOICE\n");
+                    printf("==============================\n");
+                    printf("Booking ID : %d\n", booking.bookingID);
+                    printf("Guest Name : %s\n", booking.guestName);
+                    printf("Room No    : %d\n", booking.roomNumber);
+                    printf("Room Type  : %s\n", room.roomType);
+                    printf("Days Stay  : %d\n", booking.totalDays);
+
+                    printf("------------------------------\n");
+
+                    printf("Room Cost  : %.2f\n", roomCost);
+                    printf("Tax (10%%)  : %.2f\n", tax);
+                    printf("Discount   : %.2f\n", discount);
+
+                    printf("------------------------------\n");
+                    printf("Total Bill : %.2f\n", totalBill);
+                    printf("==============================\n");
+                    break;
+                }
+            }
+            break;
+        }
+    }
+    if (!found)
+    {
+        printf("Booking Not Found!\n");
+    }
+    fclose(bookingFile);
+    fclose(roomFile);
+}
+void viewGuestRecords()
+{
+    FILE *userFile;
+    struct Booking booking;
+    userFile = fopen("booking.dat","rb");
+    if(userFile==NULL)
+    {
+        printf("No Guest Records Found!\n");
+        return;
+    }
+    printf("\n========== GUEST RECORDS ==========\n");
+    while(fread(&booking,sizeof(struct Booking),1,userFile)==1)
+    {
+        printf("\nBooking ID : %d\n",booking.bookingID);
+        printf("Guest Name : %s\n",booking.guestName);
+        printf("Room No    : %d\n",booking.roomNumber);
+        printf("Check-In   : %s\n",booking.checkIn);
+        printf("Check-Out  : %s\n",booking.checkOut);
+        printf("Status     : %s\n",booking.status);
+        printf("---------------------------------\n");
+    }
+    fclose(userFile);
 }
 int main()
 {
