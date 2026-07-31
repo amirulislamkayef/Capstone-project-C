@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
 struct User
 {
     char name[50];
@@ -739,6 +738,7 @@ void viewGuestRecords()
     }
     fclose(userFile);
 }
+
 int main()
 {
     int choice;
@@ -763,7 +763,7 @@ int main()
             loginUser();
             break;
         case 3:
-            printf("Thank you for choosing us..abr dekha hobe\n");
+            printf("Thank you for choosing us\n");
             exit(0);
         default:
             printf("Invalid Choice...Please try again\n");
